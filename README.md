@@ -20,9 +20,9 @@ HTTP GET /produce
 HttpServerVerticle
     ↓ (sends to "producer.trigger")
 ProducerVerticle.triggerMessage()
-    ↓ (sends to "consumer.message" with trace context)
+    ↓ (sends to "consumer.message")
 ConsumerVerticle.processMessage()
-    ↓ (replies with trace context)
+    ↓ (replies)
 ProducerVerticle (receives reply)
     ↓ (replies to HttpServerVerticle)
 HttpServerVerticle (responds to HTTP)
@@ -33,12 +33,12 @@ HttpServerVerticle (responds to HTTP)
 1. **Local Event Bus** (`producer.trigger`)
     - Communication within producer application
     - HttpServerVerticle → ProducerVerticle
-    - Same JVM, same trace context
+    - Same JVM
 
 2. **Clustered Event Bus** (`consumer.message`)
     - Communication between producer and consumer applications
     - Cross-network, different JVMs
-    - Manual trace context injection/extraction required
+    - Full automatic injection
 
 ### Goal of each components
 
@@ -51,7 +51,7 @@ HttpServerVerticle (responds to HTTP)
 
 - `GET /hello` → Simple health check returning "Hello from Vert.x (Clustered)"
 - `GET /greet/{name}` → Greeting service functionality
-- `GET /produce` → **Main flow trigger** - initiates the complete distributed trace flow
+- `GET /produce` → **Main flow trigger** - initiates the distributed trace flow
 
 
 ### Benefits of this approach
@@ -92,25 +92,25 @@ vertx-multi-spring-boot-clustered/
 ├── docker-compose.yml                   # ← Container orchestration
 ├── producer-app/                        # ← HTTP API + Message producer
 │   ├── src/main/java/com/datadoghq/pej/producer/
-│   │   ├── ProducerApplication.java     # ← OpenTelemetry bean configuration
-│   │   ├── ProducerVerticle.java        # ← Trace context injection
+│   │   ├── ProducerApplication.java     # ← Bootstrap the producer
+│   │   ├── ProducerVerticle.java        # ← Producer processing
 │   │   ├── GreetingVerticle.java
 │   │   └── HttpServerVerticle.java
-│   ├── build.gradle.kts                 # ← OpenTelemetry API dependency
+│   ├── build.gradle.kts                 # ← Build file
 │   └── Dockerfile                       # ← Datadog agent integration
 └── consumer-app/                        # ← Message consumer
     ├── src/main/java/com/datadoghq/pej/consumer/
-    │   ├── ConsumerApplication.java     # ← OpenTelemetry bean configuration
-    │   └── ConsumerVerticle.java        # ← Trace context extraction
-    ├── build.gradle.kts                 # ← OpenTelemetry API dependency
+    │   ├── ConsumerApplication.java     # ← Bootstrap the consumer
+    │   └── ConsumerVerticle.java        # ← Consumer processing
+    ├── build.gradle.kts                 # ← Build file
     └── Dockerfile                       # ← Datadog agent integration
 ```
 
 ## Key implementation highlights
 
 
-### 1. Datadog agent integration
-Applications run with the Datadog java agent for automatic instrumentation:
+### Datadog agent integration
+Applications run with the Datadog java agent for full automatic instrumentation:
 
 ```docker-compose.yml
 ...
@@ -128,16 +128,6 @@ Applications run with the Datadog java agent for automatic instrumentation:
 ```
 
 The `JAVA_TOOL_OPTIONS` env variable contains the necessary options to configure the Datadog java agent.
-
-### 5. Span creation with attributes
-Custom spans include business context for better observability:
-
-```java
-Span span = tracer.spanBuilder("producer.send_message")
-    .setAttribute("message.destination", "consumer.message")
-    .setAttribute("message.type", "PRODUCER_MESSAGE")
-    .startSpan();
-```
 
 ## 🚀 How to build
 
