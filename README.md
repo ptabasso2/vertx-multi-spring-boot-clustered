@@ -109,7 +109,7 @@ vertx-multi-spring-boot-clustered/
 ## Key implementation highlights
 
 
-### Datadog agent integration
+### Datadog java agent set up
 Applications run with the Datadog java agent for full automatic instrumentation:
 
 ```docker-compose.yml
@@ -214,30 +214,24 @@ curl http://localhost:8080/produce
 2. **Search for services**: Look for `producer-app` and `consumer-app`
 3. **View Distributed trace**: Click on a trace to see the partial request flow
 
-<p align="left">
-  <img src="img/" width="650" />
-</p>
-
-
+> [!IMPORTANT]
+> Hazelclast clustering relies on TCP connection which is an unsupported protocol. Therefore in this case context propagation will not take place. This means that in this case **only the producer app will be traced** 
 
 <p align="left">
-  <img src="img/" width="650" />
+  <img src="img/vertx3.png" width="650" />
 </p>
-
 
 **Expected trace structure:**
 ```
 natty.request (Root Span - HTTP Request: GET /produce)
 ├── vertx.route_handler (Producer handling)
 ├── producer.send_message (Event bus send)
-...
-└── consumer.process_message (Consumer processing)
-    └── consumer.process_business_logic (Consumer business logic)
+
 ```
 
 **Expected trace attributes:**
-- **Service names**: `producer-service`, `consumer-service`
-- **Operation names**: `http.produce`, `producer.send_message`, `consumer.process_message`
+- **Service names**: `producer-app`
+- **Operation names**: `http.produce`, `producer.send_message`
 - **Custom attributes**: `message.type`, `message.destination`, `reply.success`
 
 ## 🔧 Debugging
