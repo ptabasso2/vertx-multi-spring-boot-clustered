@@ -201,11 +201,18 @@ curl http://localhost:8080/produce
 
 **Producer logs should show:**
 ```
+...
+Triggering message from producer...
+Producer received reply from consumer: Message processed successfully by consumer at 1748774535857
+...
 ```
 
 **Consumer logs should show:**
 
 ```
+...
+Consumer received: Hello from Producer!
+...
 ```
 
 ### 5. View traces in Datadog
@@ -260,7 +267,7 @@ docker-compose logs -f
 
 ### Common issues
 
-1. **No Traces in Datadog**: Check agent connectivity and API key
+1. **No traces in Datadog**: Check agent connectivity and API key
 2. **Broken traces**: Verify trace context injection/extraction
 3. **Wrong service names**: Ex verify `DD_SERVICE` environment variables
 
